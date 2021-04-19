@@ -5,9 +5,9 @@
 int main(int argc, char** argv){
     printf(1, "Hello world\n");
 
-    int status = 100;
-    int result = wait(&status);
-    printf("result  = ", result);
+    int status = 2;
+    wait(&status);
+    printf(1, "status %d", status);
 
     exit(0);
 }

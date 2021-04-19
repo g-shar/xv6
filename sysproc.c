@@ -29,8 +29,8 @@ sys_exit(void)
 int
 sys_wait(void)
 {
-  int* status;
-  if (argint(0, status) < 0) // reads address
+  int status;
+  if (argint(0, &status) < 0) // reads address
       return -1;
   return wait(&status);
 }

@@ -29,19 +29,10 @@ sys_exit(void)
 int
 sys_wait(void)
 {
-  int status;
-  if (argint(0, &status) < 0) // reads address
+  int* status;
+  if (argptr(0, (void*)&status, sizeof(int)) < 0) // reads address
       return -1;
-  return wait(&status);
-}
-
-int 
-sys_waitpid(void)
-{
-  int pid, status;
-  if (argint(0, &pid) < 0)
-    return -1;
-  return waitpid(pid, &status, 0);
+  return wait(status);
 }
 
 int

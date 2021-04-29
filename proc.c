@@ -88,6 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->prior_val = 31;   // Default to lowest priority
 
   release(&ptable.lock);
 
@@ -188,7 +189,7 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
-
+  np->prior_val = 31;   // Default to lowest priority
   // Copy process state from proc.
   if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
     kfree(np->kstack);

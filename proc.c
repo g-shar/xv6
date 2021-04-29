@@ -189,7 +189,7 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
-  np->prior_val = 31;   // Default to lowest priority
+
   // Copy process state from proc.
   if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
     kfree(np->kstack);
@@ -200,7 +200,7 @@ fork(void)
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
-
+  np->prior_val = curproc->prior_val;   // Set child prior_val to parent's
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 

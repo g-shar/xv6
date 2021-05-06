@@ -1,17 +1,15 @@
 #include "types.h"
-//#include "stat.h"
+#include "stat.h"
 #include "user.h"
 
 int main(int argc, char** argv){
-    int status;
-    int pid = fork();
-    if (pid){   // parent
-        //wait(&status);    // exit status will be 123
-        waitpid(pid, &status, 0);
-        printf(1, "parent process, child status is: %d\n", status);
-    }else{      // child
-        printf(1, "child process\n");
-        exit(123);
+    set_prior(1);
+    int i, k;
+    for (i = 0; i < 43000; i++){
+        asm("nop");
+        for (k = 0; i < 43000; k++){
+            asm("nop");
+        }
     }
     exit(0);
 }

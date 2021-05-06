@@ -89,7 +89,7 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->prior_val = 31;   // Default to lowest priority
-
+  p->burst_time = 0;   // Default burst time
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -277,6 +277,8 @@ exit(int status)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  curproc->turnaround_time = ticks - curproc->turnaround_time;
+  curproc->waiting_time = curproc->turnaround_time - curproc->burst_time;
   sched();
   panic("zombie exit");
 }
@@ -416,6 +418,7 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->burst_time += 1;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();

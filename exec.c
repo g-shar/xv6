@@ -18,6 +18,8 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
   struct proc *curproc = myproc();
+  curproc->turnaround_time = ticks;
+  curproc->burst_time += 1;
 
   begin_op();
 

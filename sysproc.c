@@ -50,6 +50,18 @@ sys_waitpid(void)
 }
 
 int
+sys_set_prior(void)
+{
+    int prior_lvl;
+    if (argint(0, &prior_lvl) < 0){
+        return -1;
+    }else{
+        return set_prior(prior_lvl);
+    }
+
+}
+
+int
 sys_kill(void)
 {
   int pid;

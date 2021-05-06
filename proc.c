@@ -222,6 +222,18 @@ fork(void)
   return pid;
 }
 
+int
+set_prior(int prior_lvl){
+    struct proc *curproc = myproc();
+    if (prior_lvl >= 0 && prior_lvl <32){
+        curproc->prior_val = prior_lvl;
+    }else{
+        curproc->prior_val = 31;
+    }
+    yield();    // transfer control to scheduler immediately
+    return prior_lvl;
+}
+
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
@@ -373,17 +385,31 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
+  struct proc *p2;
   
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
+    struct proc* highestPvalProc;
+    int highestPval = 31;
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
+        if (p->state != RUNNABLE)
+            continue;
+        highestPvalProc = p;
+        for(p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++) {
+            // find the process with highest prior_val that is runnable
+            if (p2->state != RUNNABLE)
+                continue;
+            if (p2->prior_val < highestPval) {
+                highestPvalProc = p2;
+                highestPval = p2->prior_val;
+            }
+        }
 
+      p = highestPvalProc;
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.

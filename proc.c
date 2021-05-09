@@ -369,7 +369,24 @@ scheduler(void)
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
+      if (p->prior_val < 31) {   // decrease the priority for the current process
+          p->prior_val++;
+      }else{
+          p->prior_val =  31;
+      }
 
+      for(p2 = ptable.proc; p2 < &ptable.proc[NPROC]; p2++) {
+          // increase the priority for the waiting processes
+          if (p2->state != RUNNABLE)
+              continue;
+          if (p2 != p){
+              if (p2->prior_val > 0) {
+                  p2->prior_val--;
+              }else{
+                  p2->prior_val = 0;
+              }
+          }
+      }
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;

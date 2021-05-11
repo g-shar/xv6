@@ -277,10 +277,12 @@ exit(void)
   curproc->turnaround_time = ticks - curproc->start_time;
   release(&tickslock);
   curproc->waiting_time = curproc->turnaround_time - curproc->burst_time;
+  cprintf("Process name: %s\n", curproc->name);
+  cprintf("pid: %d\n", curproc->pid);
+  cprintf("Priority: %d\n", curproc->prior_val);
   cprintf("Turnaround time: %d\n", curproc->turnaround_time);
-  cprintf("Burst time: %d\n", curproc->burst_time);
   cprintf("Waiting time: %d\n", curproc->waiting_time);
-  
+  cprintf("\n");
   curproc->state = ZOMBIE;
   sched();
   panic("zombie exit");
@@ -373,10 +375,12 @@ scheduler(void)
           c->proc = p;
           switchuvm(p);
           p->state = RUNNING;
+          acquire(&tickslock);
 	  if (ticks > p->prevTicks) {
 	      p->burst_time += 1;
               p->prevTicks = ticks;
 	  }
+          release(&tickslock);
           swtch(&(c->scheduler), p->context);
           switchkvm();
 

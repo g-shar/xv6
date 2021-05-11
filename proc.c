@@ -77,8 +77,7 @@ allocproc(void)
   char *sp;
 
   acquire(&ptable.lock);
-  cprintf("allocproc called\n");
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)  
     if(p->state == UNUSED)
       goto found;
 
@@ -274,8 +273,14 @@ exit(void)
   }
 
   // Jump into the scheduler, never to return.
+  acquire(&tickslock);
   curproc->turnaround_time = ticks - curproc->start_time;
+  release(&tickslock);
   curproc->waiting_time = curproc->turnaround_time - curproc->burst_time;
+  cprintf("Turnaround time: %d\n", curproc->turnaround_time);
+  cprintf("Burst time: %d\n", curproc->burst_time);
+  cprintf("Waiting time: %d\n", curproc->waiting_time);
+  
   curproc->state = ZOMBIE;
   sched();
   panic("zombie exit");
@@ -370,6 +375,7 @@ scheduler(void)
           p->state = RUNNING;
 	  if (ticks > p->prevTicks) {
 	      p->burst_time += 1;
+              p->prevTicks = ticks;
 	  }
           swtch(&(c->scheduler), p->context);
           switchkvm();

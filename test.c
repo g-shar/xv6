@@ -4,10 +4,11 @@
 
 int main(int argc, char** argv){
     set_prior(1);
+    //printf(1, "set priority\n");
     int i, k;
-    for (i = 0; i < 43; i++){
+    for (i = 0; i < 43000; i++){
         asm("nop");
-        for (k = 0; i < 43; k++){
+        for (k = 0; k < 43000; k++){
             asm("nop");
         }
     }

@@ -92,6 +92,10 @@ exec(char *path, char **argv)
     if(*s == '/')
       last = s+1;
   safestrcpy(curproc->name, last, sizeof(curproc->name));
+ 
+  curproc->start_time = ticks;
+  curproc->burst_time = 0;
+  curproc->prevTicks = ticks;
 
   // Commit to the user image.
   oldpgdir = curproc->pgdir;

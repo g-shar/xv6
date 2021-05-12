@@ -3,11 +3,11 @@
 #include "user.h"
 
 int main(int argc, char** argv){
-    set_prior(5);
+    set_prior(20);
     int i, k;
-    for (i = 0; i < 70000; i++){
+    for (i = 0; i < 43000; i++){
         asm("nop");
-        for (k = 0; k < 70000; k++){
+        for (k = 0; k < 43000; k++){
             asm("nop");
         }
     }

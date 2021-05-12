@@ -245,16 +245,6 @@ exit(void)
 
   if(curproc == initproc)
     panic("init exiting");
-  acquire(&tickslock);
-  curproc->turnaround_time = ticks - curproc->start_time;
-  release(&tickslock);
-  curproc->waiting_time = curproc->turnaround_time - curproc->burst_time;
-  cprintf("Process name: %s\n", curproc->name);
-  cprintf("pid: %d\n", curproc->pid);
-  cprintf("Priority: %d\n", curproc->prior_val);
-  cprintf("Turnaround time: %d\n", curproc->turnaround_time);
-  cprintf("Waiting time: %d\n", curproc->waiting_time);
-  cprintf("\n");
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
     if(curproc->ofile[fd]){
@@ -283,6 +273,16 @@ exit(void)
   }
 
   // Jump into the scheduler, never to return.
+    acquire(&tickslock);
+    curproc->turnaround_time = ticks - curproc->start_time;
+    release(&tickslock);
+    curproc->waiting_time = curproc->turnaround_time - curproc->burst_time;
+    cprintf("Process name: %s\n", curproc->name);
+    cprintf("pid: %d\n", curproc->pid);
+    cprintf("Priority: %d\n", curproc->prior_val);
+    cprintf("Turnaround time: %d\n", curproc->turnaround_time);
+    cprintf("Waiting time: %d\n", curproc->waiting_time);
+    cprintf("\n");
   curproc->state = ZOMBIE;
   sched();
   panic("zombie exit");
@@ -343,60 +343,60 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
-  struct cpu *c = mycpu();
-  c->proc = 0;
-  int highestPVal = 31;
+    struct proc *p;
+    struct cpu *c = mycpu();
+    c->proc = 0;
+    for(;;){
+        // Enable interrupts on this processor.
+        sti();
+        int highestPVal = 31;
+        acquire(&ptable.lock);
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+            // find the highest priority value in the processes
+            if(p->state != RUNNABLE)
+                continue;
+            if (p->prior_val < highestPVal){
+                highestPVal = p->prior_val;
+            }
+        }
 
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+            if(p->state != RUNNABLE)
+                continue;
+            if (p->prior_val == highestPVal){
+                if (p->prior_val < 31){
+                    p->prior_val++;
+                }else{
+                    p->prior_val = 31;
+                }
+                // Switch to chosen process.  It is the process's job
+                // to release ptable.lock and then reacquire it
+                // before jumping back to us.
+                c->proc = p;
+                switchuvm(p);
+                p->state = RUNNING;
+                acquire(&tickslock);
+                if (ticks > p->prevTicks) {
+                    p->burst_time += 1;
+                    p->prevTicks = ticks;
+                }
+                release(&tickslock);
+                swtch(&(c->scheduler), p->context);
+                switchkvm();
 
-  for(;;){
-    // Enable interrupts on this processor.
-    sti();
-
-    // Loop over process table looking for process to run.
-    acquire(&ptable.lock);
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-          // find the highest priority value in the processes
-          if(p->state != RUNNABLE)
-              continue;
-          if (p->prior_val < highestPVal){
-              highestPVal = p->prior_val;
-          }
-      }
-
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-      if (p->prior_val == highestPVal){
-          if (p->prior_val < 31){
-              p->prior_val++;
-          }else{
-              p->prior_val = 31;
-          }
-          // Switch to chosen process.  It is the process's job
-          // to release ptable.lock and then reacquire it
-          // before jumping back to us.
-          c->proc = p;
-          switchuvm(p);
-          p->state = RUNNING;
-
-          swtch(&(c->scheduler), p->context);
-          switchkvm();
-
-          // Process is done running for now.
-          // It should have changed its p->state before coming back.
-          c->proc = 0;
-      }else{
-          if (p->prior_val > 0){
-              p->prior_val--;
-          }else{
-              p->prior_val = 0;
-          }
-      }
+                // Process is done running for now.
+                // It should have changed its p->state before coming back.
+                c->proc = 0;
+            } else {
+                if (p->prior_val > 0){
+                    p->prior_val--;
+                } else {
+                    p->prior_val = 0;
+                }
+            }
+        }
+        release(&ptable.lock);
     }
-    release(&ptable.lock);
-
-  }
 }
 
 // Enter scheduler.  Must hold only ptable.lock

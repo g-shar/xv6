@@ -346,56 +346,92 @@ scheduler(void)
     struct proc *p;
     struct cpu *c = mycpu();
     c->proc = 0;
+
+
+
     for(;;){
         // Enable interrupts on this processor.
         sti();
-        int highestPVal = 31;
+
+        // Loop over process table looking for process to run.
         acquire(&ptable.lock);
+        struct proc *p2;
+        int flag = 0;
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
             // find the highest priority value in the processes
             if(p->state != RUNNABLE)
                 continue;
-            if (p->prior_val < highestPVal){
-                highestPVal = p->prior_val;
+            if (flag == 0){
+                p2 = p;
+                flag = 1;
+            }
+            if (p->prior_val > 0){
+                p->prior_val--;
+            }else{
+                p->prior_val = 0;
+            }
+            if (flag == 1 && p->prior_val < p2->prior_val){
+                p2 = p;
             }
         }
-
-        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-            if(p->state != RUNNABLE)
-                continue;
-            if (p->prior_val == highestPVal){
-                if (p->prior_val < 31){
-                    p->prior_val++;
-                }else{
-                    p->prior_val = 31;
-                }
-                // Switch to chosen process.  It is the process's job
-                // to release ptable.lock and then reacquire it
-                // before jumping back to us.
-                c->proc = p;
-                switchuvm(p);
-                p->state = RUNNING;
-                acquire(&tickslock);
-                if (ticks > p->prevTicks) {
-                    p->burst_time += 1;
-                    p->prevTicks = ticks;
-                }
-                release(&tickslock);
-                swtch(&(c->scheduler), p->context);
-                switchkvm();
-
-                // Process is done running for now.
-                // It should have changed its p->state before coming back.
-                c->proc = 0;
+        if (flag != 0) {
+            // Switch to chosen process.  It is the process's job
+            // to release ptable.lock and then reacquire it
+            // before jumping back to us.
+            c->proc = p2;
+            switchuvm(p2);
+            p2->state = RUNNING;
+            if (p2->prior_val < 31) {
+                p2->prior_val += 1;
             } else {
-                if (p->prior_val > 0){
-                    p->prior_val--;
-                } else {
-                    p->prior_val = 0;
-                }
+                p2->prior_val = 31;
             }
+
+            if (p2->prior_val < 31) {
+                p2->prior_val += 1;
+            } else {
+                p2->prior_val = 31;
+            }
+            swtch(&(c->scheduler), p2->context);
+            switchkvm();
+
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            c->proc = 0;
+
+//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//      if(p->state != RUNNABLE)
+//        continue;
+//      if (p->prior_val == highestPVal){
+//          if (p->prior_val < 31){
+//              p->prior_val++;
+//          }else{
+//              p->prior_val = 31;
+//          }
+//          // Switch to chosen process.  It is the process's job
+//          // to release ptable.lock and then reacquire it
+//          // before jumping back to us.
+//          c->proc = p;
+//          switchuvm(p);
+//          p->state = RUNNING;
+//
+//          swtch(&(c->scheduler), p->context);
+//          switchkvm();
+//
+//          // Process is done running for now.
+//          // It should have changed its p->state before coming back.
+//          c->proc = 0;
+//      }else{
+//          if (p->prior_val > 0){
+//              p->prior_val--;
+//          }else{
+//              p->prior_val = 0;
+//          }
+//      }
+//    }
         }
         release(&ptable.lock);
+
     }
 }
 

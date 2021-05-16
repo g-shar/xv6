@@ -32,6 +32,6 @@ main(void)
       exit();
     }
     while((wpid=wait()) >= 0 && wpid != pid)
-      printf(1, "zombie for process %d!\n", wpid);
+      printf(1, "zombie!\n", pid);
   }
 }

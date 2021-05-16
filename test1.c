@@ -3,7 +3,7 @@
 #include "user.h"
 
 int main(int argc, char** argv){
-    set_prior(3);
+    set_prior(10);
     int i, k;
     for (i = 0; i < 40000; i++){
         asm("nop");
@@ -13,3 +13,4 @@ int main(int argc, char** argv){
     }
     exit();
 }
+

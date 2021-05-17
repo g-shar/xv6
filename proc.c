@@ -347,31 +347,42 @@ scheduler(void)
     struct cpu *c = mycpu();
     c->proc = 0;
 
-
-
     for(;;){
         // Enable interrupts on this processor.
         sti();
 
         // Loop over process table looking for process to run.
         acquire(&ptable.lock);
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+            // find the process with highest priority value
+            if (p->state != RUNNABLE)
+                continue;
+            //cprintf("%s,  %d\n", p->name, p->prior_val);
+        }
         struct proc *p2;
         int flag = 0;
+        int aging = 0;
         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-            // find the highest priority value in the processes
+            // find the process with highest priority value
             if(p->state != RUNNABLE)
                 continue;
+
             if (flag == 0){
                 p2 = p;
                 flag = 1;
             }
-            if (p->prior_val > 0){
-                p->prior_val--;
-            }else{
-                p->prior_val = 0;
-            }
-            if (flag == 1 && p->prior_val < p2->prior_val){
+
+            if (flag == 1 && p->prior_val < p2->prior_val) {
                 p2 = p;
+            }
+
+            if (aging != 0) {
+                if (p->prior_val > 0) {
+                    p->prior_val--;
+                } else {
+                    p->prior_val = 0;
+                }
+
             }
         }
         p = p2;
@@ -382,24 +393,26 @@ scheduler(void)
             c->proc = p;
             switchuvm(p);
             p->state = RUNNING;
-            if (p->prior_val < 31) {
-                p->prior_val += 1;
-            } else {
-                p->prior_val = 31;
-            }
-
-            if (p->prior_val < 31) {
-                p->prior_val += 1;
-            } else {
-                p->prior_val = 31;
-            }
-
             acquire(&tickslock);
             if (ticks > p->prevTicks) {
                 p->burst_time += 1;
                 p->prevTicks = ticks;
             }
             release(&tickslock);
+            if (aging != 0) {
+                if (p->prior_val < 31) {
+                    p->prior_val += 1;
+                } else {
+                    p->prior_val = 31;
+                }
+
+                if (p->prior_val < 31) {
+                    p->prior_val += 1;
+                } else {
+                    p->prior_val = 31;
+                }
+            }
+            //cprintf("CHOSEN %s,  %d\n", p->name, p->prior_val);
             swtch(&(c->scheduler), p->context);
             switchkvm();
 
